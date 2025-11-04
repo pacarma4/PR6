@@ -1,0 +1,253 @@
+---
+title: "Práctica 6. Análisis Exploratorio de Datos."
+subtitle: "Análisis Exploratorio de Datos, Máster en Ciencia de Datos - UV"
+output:
+  html_document:
+    echo: yes
+    number_sections: no
+    theme: lumen
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F}
+# CONFIGURACIÓN GENERAL
+library(knitr)
+options(width = 100)
+# Opciones generales chunks
+opts_chunk$set(echo = T, message = F, error = F, warning = F,
+               comment = NA, fig.align = 'center', dpi = 100, tidy = F,
+               cache.path = '.cache/', fig.path = './figure/', fig.dim=c(4,3))
+# options(xtable.type = 'html')
+knit_hooks$set(inline = function(x) {
+  if(is.numeric(x)) {
+    round(x, getOption('digits'))
+  } else {
+    paste(as.character(x), collapse = ', ')
+  }
+})
+# knit_hooks$set(plot = knitr:::hook_plot_html)
+opts_chunk$set(fig.width=6, fig.height=4)
+```
+
+```{r}
+
+rm(list=ls())
+library(pacman)
+packages = c("knitr", "ggplot2","tidyr","dplyr","readr","GGally")
+pacman::p_load(char=packages)
+
+```
+
+# Introducción y objetivos
+
+El objetivo de esta práctica es realizar un análisis exploratorio de datos: explorando el conjunto de datos; obteniendo los estadísticos básicos de las variables numéricas; visualizando las relaciones entre variables; y calculando las relaciones entre variables tanto numéricas como categóricas.
+
+En esta práctica, las etapas que vamos a considerar en el análisis exploratorio de datos son:
+
+  1. Lectura e inspección de los datos.
+  2. Análisis univariante de los datos: variables numéricas y categóricas.
+  3. Análisis bivariante de los datos: variables numéricas y categóricas.
+  
+# Lectura e inspección de los datos
+
+Vamos a trabajar con el conjunto de datos "Nos Autoevaluamos" generado por nosotros al rellenar la tabla de datos de la tarea correspondiente. 
+
+Este conjunto contiene datos perdidos e inconsistencias que habrá que corregir antes de analizar la distribución de los datos. Para evitar estas inconsistencias, estos datos deberán ser eliminados, corregidos o imputados, tal y como vimos en la práctica anterior.
+
+El conjunto "`NosAutoanalizamos_TD2019 - Hoja 1 - Clean.tsv`" ya ha sido procesado en parte para poder trabajar en esta práctica. En él tenemos para cada una de las asignaturas (ALG, ANM, FP, DCS y MD) columnas acabadas en `.num`, con las notas en valor numérico, y columnas acabadas en `.cat`, con valores categóricos: AP para aprobada, NP para no presentado y NC para no compensable.
+
+Variable | Comentarios
+---------|-------------------------------------------------------------
+Identificación  | Usuario de correo
+Age  |	Edad en años
+Sex  |	Sexo: 'Femenino', 'Masculino'	
+Wr.Hnd  |	Distancia del extremo del índice al extremo del pulgar en centímetros de la mano con la que escribimos
+NW.Hnd  |	Mano con la que escribes: 'Izquierda', 'Derecha'	
+Fold  |	Brazo que está arriba cuando cruzas los brazos: 'Izquierdo', 'Derecho'
+Pulse  |	Ritmo cardíaco, en reposo, en latidos por minuto.	
+Clap  |	Posición de las manos al aplaudir: 'Der s Izd', (Derecha sobre izquierda) 'Izq s Der', 'Ninguna'	
+Exer  |	Días a la semana que realizas ejercicio físico: Numérica de 0-7
+Smoke  |	Fumador: 'Sí' / 'No'	
+Height  |	Altura expresada en centímetros	
+ALG  |	Calificación obtenida en álgebra. Usa 'NP' para no presentado y 'NC', para no compensable, si procede	
+ANM  |	Calificación obtenida en análisis matemático. Usa 'NP' para no presentado y 'NC', para no compensable, si procede	
+FP  |	Calificación obtenida en fundamentos de programación. Usa 'NP' para no presentado y 'NC', para no compensable, si procede	
+DCS  |	Calificación obtenida en Datos Ciencia y Sociedad. Usa 'NP' para no presentado y 'NC', para no compensable, si procede	
+MD  |	Calificación obtenida en Matemática Discreta. Usa 'NP' para no presentado y 'NC', para no compensable, si procede	
+HSt  |	Horas de trabajo diarias relacionadas con los estudios, además de la asistencia a clase
+Hwork  |	Horas de trabajo remunerado semanales (0 indica que no tiene otro trabajo)	
+Comentarios  |  Campo de texto libre para incluir comentarios que consideres sobre la asignatura
+
+## Ejercicio 1: Lectura de datos
+
+  - Lee los datos del fichero con `read_tsv` a una variable llamada `Datos`.
+  - Convierte las variables categóricas acabadas en `.cat` a tipo `factor`. Puedes hacerlo:
+   * Usando la función `mutate_at`  (junto con `vars`, `ends_with` y `as.factor`).
+   * Usando `mutate(across())` (junto con `ends_with` y `as.factor`).
+
+```{r Solucion_Ej1, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+Datos <- read_delim("data/NosAutoanalizamos_TD2019 - Hoja 1 - Clean.tsv", 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+
+library(dplyr)
+Datos %>%
+  mutate(across(ends_with("cat"),as.factor))
+
+```
+
+## Ejercicio 2: Inspección visual
+
+Inspecciona visualmente los valores del conjunto de datos (`View`) y ordena de mayor a menor y de menor a mayor cada variable.
+
+```{r Solucion_Ej2, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+View(Datos)
+
+Datos %>%
+  arrange()
+```
+
+# Análisis univariante de variables numéricas
+
+## Ejercicio 3: Estadísticos básicos
+
+Empleando la función `sumarise(across())` calcula la media, la desviación típica, mediana y el _interquartile range_ (`IQR`) de las variables que acaban en `.num` (notas numéricas).
+
+  * Ten en cuenta que no se puede realizar un análisis estadístico con datos faltantes, pero en la mayoría de los casos se puede optar por no considerar dichos valores al realizar los cálculos (`na.rm=TRUE`).
+  * Reordena los resultados para generar una tabla en la que tengas en cada fila una de las variables y en cada columna los estadísticos calculados.
+  
+    1. Primero usa `pivot_longer` para juntar todo en dos columnas, una para los nombres combinados de las variables y sus estadísticos, y otra para los valores.
+    2. Luego usa `separate` para separar la columna de nombres en dos, una llamada `asignatura` con el nombre de la variable, y otra llamada `stat` con el nombre del estadístico.
+    3. Por último, usa `pivot_wider` para distribuir la columna `stat` en cuatro columnas, cada una con el nombre del estadístico.
+    4. Por último, combina las columnas que almacenan media y desviación típica en una columna, tipo texto, `mean`±`sd`. 
+
+*Expresa los resultados con 2 decimales*.
+
+El resultado final debe ser una tabla como ésta:
+
+asignatura | mean±sd | median | IQR
+----|------|----|----
+ALG.num|
+ANM.num|
+etc    |
+
+
+```{r Solucion_Ej3, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+library(tidyr)
+Datos %>%
+  pivot_longer(cols=ends_with(".num"), names_to = "asignatura", values_to="valor") %>%
+  group_by(asignatura) %>%
+  summarise(mean= mean(valor,na.rm=TRUE), sd = sd(valor, na.rm=TRUE), IQR =IQR(valor, na.rm = TRUE))
+
+```
+
+## Ejercicio 4: Distribución de datos
+
+Representa gráficamente la curva de notas de la asignatura ALG estimando la distribución de datos: histograma (`geom_histogram`) y curva de densidad (`geom_density`).
+
+  - Recuerda que para que los dos representaciones 'casen' hay que indicarle a `geom_histogram` que use la función `density` para estimar el histograma, es decir: `geom_histogram(aes(y=stat(density)))`.
+  - Compara el resultado con la media de las notas para esa asignatura. Puedes marcar dicha media en el gráfico con `geom_point` o con `geom_vline()` especificando el parámetro `xintercept`.
+
+```{r Solucion_Ej4, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+library(ggplot2)
+
+Datos %>%
+  pivot_longer(cols=ends_with(".num"), names_to = "asignatura", values_to="valor") %>%
+  filter(asignatura=="ALG.num") %>%
+  ggplot(aes(valor)) + 
+  geom_histogram(aes(y=stat(density))) +
+  geom_density() + 
+  geom_vline(aes(xintercept = mean(valor)), color="red", size=1)
+
+```
+
+## Ejercicio 5: Test de normalidad de la distribución de datos
+
+Compara la distribución de probabilidad de las notas de la asignatura ANM con la de una Gaussiana empleando la función `qqPlot` (quantile-quantile plot) de la librería `car`, que representa gráficamente los cuantiles de la distribución analizada respecto de los de una distribución normal (Gaussiana).
+
+```{r Solucion_Ej5, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+library(car)
+
+qqPlot(Datos$ANM.num, main = "Distribución de notas de AMN vs Normal", xlab = "Cuantiles teóricos distribución normal", ylab= "Cuantiles observados de AMN",col="blue")
+```
+
+# Análisis univariante de variables categóricas
+
+## Ejercicio 6: Análisis de frecuencias en variables categóricas
+
+Vamos a calcular la frecuencia de cada valor en las variables categóricas de calificaciones con la función `table`.
+
+  * Calcula la frecuencia de cada calificación para la asignatura ALG.
+  * Usa también la función `table` para calcular la tabla de contingencia con la frecuencia de cada combinación de las calificaciones de las asignaturas ALG y ANM.
+  * Representa la tabla de contingencia usando `mosaicplot`.
+
+```{r Solucion_Ej6, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+table(Datos$ALG.cat)
+
+table(Datos$ALG.cat, Datos$ANM.cat)
+
+mosaicplot(table(Datos$ALG.cat, Datos$ANM.cat),main = "ALG x ANM", color = TRUE, las = 1, xlab = "Nota ALG", ylab="Nota ANM" )
+
+```
+
+# Análisis bivariante de variables numéricas
+
+## Ejercicio 7: Matrices de covarianza y correlación
+
+  * Calcula las matrices de covarianza (no acotada) y correlación (acotada), considerando todas las variables con las notas numéricas, para encontrar relaciones (lineales) entre variables. 
+  * Compara los resultados para el coeficiente de correlación de Pearson (para variables numéricas) y de Spearman (para variables numéricas ordinales).
+
+```{r Solucion_Ej7, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+Datos %>%
+  select(ends_with(".num")) %>%
+  cor(use = "complete.obs", method = "pearson")
+
+Datos %>%
+  select(ends_with(".num")) %>%
+  cor(use = "complete.obs", method = "spearman")
+```
+
+La correlación de Pearson sirve para cuando la relación entre dos variables es lineal, mientras que la de Spearman es robusta frente a relaciones no lineales en datos ordenados.
+
+**Nota**:(La correlación de Spearman calcula la correlación entre los rangos de las secuencias. El rango de una secuencia es otra secuencia de la misma longitud cuyos valores son las  posiciones que ocuparía el valor de la variable original cuando la secuencia de partida se ordena en orden creciente, por ejmplo, si aa<-c(1,3.8,5,2.3), rank(aa) es la secuencia (1,3,4,2), ya que estas serían las posiciones en la secuencia ordenada de los valores de la secuencia inicial.). Cualquier función creciente (lineal o no lineal), aplicada sobre los datos no modifica el resultado de la correlación de Spearman.
+
+Para comprobarlo, vamos a aplicar una función no lineal a una de las variables y a calcular la correlación usando los métodos de Pearson y Spearman. Compruébalo entre las variables `sqrt(ALG.num)` y `MD.num`, comparando con los resultados anteriores. 
+
+```{r Solucion_Ej7 bis, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+
+```
+
+## Ejercicio 8: Representación gráfica de correlación entre variables
+
+Dibuja las matrices de correlación del conjunto de notas numéricas.
+Podemos usar `pairs` del paquete base o bien `ggcorr` y `ggpairs` de la librería `GGally`.
+
+```{r Solucion_Ej8, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+
+```
+
+# Análisis bivariante de variables categóricas
+
+## Ejercicio 9: Dependencia entre variables categóricas
+
+Vamos a considerar 2 variables categóricas para determinar su relación en términos de dependencia con el test Chi cuadrado de Pearson ($\chi^2$).
+
+  * Comprueba la dependencia entre los tipos de calificaciones de ALG y ANM.
+  * Comprueba si existe dependencia entre la calificación de ALG y la variable Sex.
+
+Nota: usa la función `chisq.test` con el parámetro `correct=FALSE` y analiza su significancia estadística (si $p<0,05$ rechazamos la hipótesis nula de independencia y concluimos que existe dependencia entre las variables). 
+
+```{r Solucion_Ej9, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+
+```
+
+
+```{r Solucion_Ej9b, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+
+```
+
+
+
+
