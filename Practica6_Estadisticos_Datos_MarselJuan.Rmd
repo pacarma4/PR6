@@ -216,7 +216,15 @@ La correlación de Pearson sirve para cuando la relación entre dos variables es
 Para comprobarlo, vamos a aplicar una función no lineal a una de las variables y a calcular la correlación usando los métodos de Pearson y Spearman. Compruébalo entre las variables `sqrt(ALG.num)` y `MD.num`, comparando con los resultados anteriores. 
 
 ```{r Solucion_Ej7 bis, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+Datos %>%
+  mutate(raizALG = sqrt(ALG.num)) %>%
+  select(raizALG, MD.num) %>%
+  cor(use = "complete.obs", method = "pearson")
+Datos %>%
+  mutate(raizALG = sqrt(ALG.num)) %>%
+  select(raizALG, MD.num) %>%
+  cor(use = "complete.obs", method = "spearman")
+ 
 ```
 
 ## Ejercicio 8: Representación gráfica de correlación entre variables
@@ -225,7 +233,11 @@ Dibuja las matrices de correlación del conjunto de notas numéricas.
 Podemos usar `pairs` del paquete base o bien `ggcorr` y `ggpairs` de la librería `GGally`.
 
 ```{r Solucion_Ej8, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
+library(GGally)
 
+Datos %>%
+  select(ends_with(".num")) %>%
+  ggpairs(title = "Matriz correlación y dispersión de variables numéricas")
 ```
 
 # Análisis bivariante de variables categóricas
@@ -240,12 +252,17 @@ Vamos a considerar 2 variables categóricas para determinar su relación en tér
 Nota: usa la función `chisq.test` con el parámetro `correct=FALSE` y analiza su significancia estadística (si $p<0,05$ rechazamos la hipótesis nula de independencia y concluimos que existe dependencia entre las variables). 
 
 ```{r Solucion_Ej9, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+Datos %>%
+  table(ALG.num,ANM.num) %>%
+  chisq.test(correct = FALSE)
+  
 ```
 
 
 ```{r Solucion_Ej9b, include=TRUE, echo=TRUE, eval=TRUE, results=TRUE}
-
+Datos %>% 
+  table(ALG.num, Sex) %>%
+  chisq.test(correct = FALSE)
 ```
 
 
